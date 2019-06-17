@@ -26,7 +26,8 @@ fn main() {
     build
         .include(&webview_path)
         .file("webview.c")
-        .flag_if_supported("-std=c11")
+        .cpp(true)
+        //.flag_if_supported("-std=c++11")
         .flag_if_supported("-w");
 
     if env::var("DEBUG").is_err() {
@@ -38,7 +39,10 @@ fn main() {
     let target = env::var("TARGET").unwrap();
 
     if target.contains("windows") {
-        build.define("WEBVIEW_WINAPI", None);
+        build.define("WEBVIEW_EDGE", None);
+        build.flag("/EHsc");
+        build.flag("/std:c++17");
+        build.flag("/TP");
         for &lib in &["ole32", "comctl32", "oleaut32", "uuid", "gdi32"] {
             println!("cargo:rustc-link-lib={}", lib);
         }

@@ -415,30 +415,34 @@ impl<'a, T> WebView<'a, T> {
         DialogBuilder::new(self)
     }
 
-    /// Iterates the event loop. Returns `None` if the view has been closed or terminated.
-    pub fn step(&mut self) -> Option<WVResult> {
-        unsafe {
-            match webview_loop(self.inner, 1) {
-                0 => {
-                    let closure_result = &mut self.user_data_wrapper_mut().result;
-                    match closure_result {
-                        Ok(_) => Some(Ok(())),
-                        e => Some(mem::replace(e, Ok(()))),
-                    }
-                }
-                _ => None,
-            }
-        }
-    }
+    // /// Iterates the event loop. Returns `None` if the view has been closed or terminated.
+    // pub fn step(&mut self) -> Option<WVResult> {
+    //     unsafe {
+    //         match webview_run(self.inner) {
+    //             0 => {
+    //                 let closure_result = &mut self.user_data_wrapper_mut().result;
+    //                 match closure_result {
+    //                     Ok(_) => Some(Ok(())),
+    //                     e => Some(mem::replace(e, Ok(()))),
+    //                 }
+    //             }
+    //             _ => None,
+    //         }
+    //     }
+    // }
 
     /// Runs the event loop to completion and returns the user data.
     pub fn run(mut self) -> WVResult<T> {
         loop {
-            match self.step() {
-                Some(Ok(_)) => (),
-                Some(e) => e?,
-                None => return Ok(self.into_inner()),
+            unsafe {
+                webview_run(self.inner);
             }
+            unreachable!();
+            // match self.step() {
+            //     Some(Ok(_)) => (),
+            //     Some(e) => e?,
+            //     None => return Ok(self.into_inner()),
+            // }
         }
     }
 
@@ -459,7 +463,7 @@ impl<'a, T> WebView<'a, T> {
             .expect("A dispatch channel thread panicked while holding mutex to WebView.");
 
         let user_data_ptr = self.user_data_wrapper_ptr();
-        webview_exit(self.inner);
+        webview_terminate(self.inner);
         wrapper_webview_free(self.inner);
         let user_data = *Box::from_raw(user_data_ptr);
         user_data.inner
